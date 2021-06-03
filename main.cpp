@@ -5,7 +5,8 @@
 
 #include "geometry.h"
 
-#include "triangulation.h"
+
+
 
 
 std::string _wndTitle = "MaxAreaRect";
@@ -254,82 +255,9 @@ void onMouseClick(int event, int x, int y, int flags, void* userdata)
 }
 
 
-#include "vectorcircular.h"
-void debugVector(QString title, const VectorCircular<int> &v)
-{
-    QStringList vl;
-    for(size_t i=0; i<v.size(); ++i) {
-        vl.append(QString::number(v[i]));
-    }
-    qDebug()<<title<<vl.join(" ");
-
-}
-
-
 int main(int argc, char *argv[])
 {
-    VectorCircular<int> v;
-
-    v.push_back(0);
-    v.push_back(1);
-    v.push_back(2);
-    v.push_back(3);
-    v.push_back(4);
-    v.push_back(5);
-
-    debugVector("push_back", v);
-
-
-    VectorCircular<int>::Iterator i = v.begin();
-
-    for (i=v.begin()+3; i!=v.begin(); ++i) {
-        qDebug()<<"ITER 2:"<<*i<<"idx"<<i.key();
-    }
-
-
-    qDebug()<<"FORWARD";
-    for (i=v.begin(); i!=v.end(); ++i) {
-        qDebug()<<"ITER:"<<*i<<"idx"<<i.key();
-    }
-
-
-    qDebug()<<"LAST FOR ITERR KEY"<<i.key()<<*i<<"IDX"<<i.idx();
-    ++i;
-    qDebug()<<"LAST INC ITERR KEY"<<i.key()<<*i<<"IDX"<<i.idx();
-
-
-    VectorCircular<int>::Iterator i4 = i+4, i5 = i+5, i6 = i+6;
-
-
-    qDebug()<<"INC 4 VAL 5 NNN"<<*i4;
-    qDebug()<<"INC 5 REAL 0 NNN"<<*i5;
-    qDebug()<<"INC 6 REAL 1 NNN"<<*i6;
-
-
-    qDebug()<<"REMOVE: "<<*i5<<i5.key();
-
-    VectorCircular<int>::Iterator remIt = v.erase(i5);
-
-    qDebug()<<"VAL 4 REAL 1 REM"<<*i4;
-    qDebug()<<"VAL 6 REAL 2 REM"<<*i6;
-
-
-    for (i=v.begin(); i!=v.end(); ++i) {
-        qDebug()<<"ITER"<<*i<<"idx"<<i.key();
-    }
-
-
-    qDebug()<<"------------------------------------------------";
-    VectorCircular<int>::Iterator it = v.begin();
-
-    for (int i=0; i<20; ++i) {
-        qDebug()<<"Need"<<(i%v.size())<<"get"<<(*(it+i))-1;
-    }
-
-
-    return 0;
-
-    cv::namedWindow(_wndTitle, cv::WINDOW_FREERATIO);
+     cv::namedWindow(_wndTitle, cv::WINDOW_FREERATIO);
     cv::setMouseCallback(_wndTitle, onMouseClick, NULL);
 
     int iteratCount = 40;

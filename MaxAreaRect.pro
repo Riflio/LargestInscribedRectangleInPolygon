@@ -6,8 +6,7 @@ CONFIG -= app_bundle
 
 SOURCES += \
         geometry.cpp \
-        main.cpp \
-        triangulation.cpp
+        main.cpp
 
 unix {
     INCLUDEPATH += "/usr/local/opencv/include/opencv4/"
@@ -49,6 +48,4 @@ win32 {
 }
 
 HEADERS += \
-    geometry.h \
-    triangulation.h \
-    vectorcircular.h
+    geometry.h
