@@ -48,4 +48,5 @@ win32 {
 }
 
 HEADERS += \
+    earcut.hpp/include/mapbox/earcut.hpp \
     geometry.h

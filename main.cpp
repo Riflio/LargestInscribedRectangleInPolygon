@@ -5,6 +5,30 @@
 
 #include "geometry.h"
 
+#include <QDebug>
+
+
+
+#include "earcut.hpp/include/mapbox/earcut.hpp"
+
+namespace mapbox {
+namespace util {
+
+template <>
+struct nth<0, Geometry::Point> {
+    inline static int get(const Geometry::Point &t) {
+        return t.x;
+    };
+};
+template <>
+struct nth<1, Geometry::Point> {
+    inline static int get(const Geometry::Point &t) {
+        return t.y;
+    };
+};
+
+} // namespace util
+} // namespace mapbox
 
 
 
@@ -12,8 +36,6 @@
 std::string _wndTitle = "MaxAreaRect";
 std::vector<Geometry::Point> _polygon;
 
-
-#include <QDebug>
 
 
 
@@ -99,6 +121,21 @@ cv::Point intersectLinesPoint(const cv::Point &p1, const cv::Point &p2, const cv
 }
 
 
+/**
+* @brief pointInTriangle
+* @param a
+* @param b
+* @param c
+* @param p
+* @return
+*/
+bool pointInTriangle(const Geometry::Point &a, const Geometry::Point &b, const Geometry::Point &c, const Geometry::Point &p)
+{
+    return (c.x - p.x) * (a.y - p.y) - (a.x - p.x) * (c.y - p.y) >= 0 &&
+           (a.x - p.x) * (b.y - p.y) - (b.x - p.x) * (a.y - p.y) >= 0 &&
+           (b.x - p.x) * (c.y - p.y) - (c.x - p.x) * (b.y - p.y) >= 0;
+}
+
 
 cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, cv::Mat surface, size_t maxIters)
 {
@@ -180,8 +217,8 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
 
 
     //-- Покажем получившиеся лучи
-    for (size_t xi=0;  xi<XRays.size(); ++xi) { cv::line(surface, cv::Point(XRays[xi], FT), cv::Point(XRays[xi], FB), cv::Scalar(255,255,0), 1, cv::LINE_AA); }
-    for (size_t yi=0;  yi<YRays.size(); ++yi) { cv::line(surface, cv::Point(FL, YRays[yi]), cv::Point(FR, YRays[yi]), cv::Scalar(255,255,0), 1, cv::LINE_AA); }
+    for (size_t xi=0;  xi<XRays.size(); ++xi) { cv::line(surface, cv::Point(XRays[xi], FT), cv::Point(XRays[xi], FB), cv::Scalar(150, 150,150), 1, cv::LINE_AA); }
+    for (size_t yi=0;  yi<YRays.size(); ++yi) { cv::line(surface, cv::Point(FL, YRays[yi]), cv::Point(FR, YRays[yi]), cv::Scalar(150, 150,150), 1, cv::LINE_AA); }
 
 
 
@@ -207,37 +244,63 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
 
     qDebug()<<"SUB RECTS COUNT"<<subRects.size();
 
-    //-- Делаем триангуляцию полигона, что бы могли побыстраляну избавиться от прямоуголдьников вне полигона
+    //-- Делаем триангуляцию полигона, что бы могли побыстраляну избавиться от прямоугольников вне полигона
 
-    Geometry::Triangulation trinagulator(polygon);
 
-    std::vector<Geometry::Triangle> triangles =  trinagulator.triangulation();
+    std::vector<std::vector<Geometry::Point>> ecCpolygon = {polygon};
+    std::vector<uint32_t> trianglesIndices = mapbox::earcut<uint32_t>(ecCpolygon);
 
-    qDebug()<<"TRIANGLES COUNT"<<triangles.size();
+    qDebug()<<"Triangles:"<<trianglesIndices.size()/3;
 
-    for (size_t ti=0; ti<std::min(maxIters,triangles.size()); ++ti) {
-        const Geometry::Triangle &tr = triangles[ti];
+    for (size_t i=0; i<trianglesIndices.size(); i+=3) {
 
-        cv::line(surface, tr.p1, tr.p2, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
-        cv::line(surface, tr.p1, tr.p3, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
-        cv::line(surface, tr.p3, tr.p1, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
+        const Geometry::Point &p1 = polygon[trianglesIndices[i]];
+        const Geometry::Point &p2 = polygon[trianglesIndices[i+1]];
+        const Geometry::Point &p3 = polygon[trianglesIndices[i+2]];
+
+        cv::line(surface, p1, p2, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
+        cv::line(surface, p2, p3, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
+        cv::line(surface, p3, p1, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
     }
 
 
-    //-- Нужно избавиться от тех, что вне контура частично или полностью
+
+    std::vector<bool> subRectsExaming;
+    int subRectsInsideCount = 0;
+
     for (size_t ri=0; ri<subRects.size(); ++ri) {
 
-
-    }
-
-    cv::RNG rng(12345);
-    for (size_t ri=0; ri<subRects.size(); ++ri) {
         const cv::Rect &rect = subRects.at(ri);
-        cv::Scalar color = cv::Scalar(rng.uniform(10,255), rng.uniform(10, 255), rng.uniform(10, 255));
-        //cv::rectangle(surface, rect, color, cv::FILLED);
+        bool rp1=false, rp2=false, rp3=false, rp4=false;
+
+        for (size_t ti=0; ti<trianglesIndices.size(); ti+=3) { //-- Все 4 точки прямоугольника должны принадлежать какому-либо треугольнику
+
+            const Geometry::Point &tp1 = polygon[trianglesIndices[ti]];
+            const Geometry::Point &tp2 = polygon[trianglesIndices[ti+1]];
+            const Geometry::Point &tp3 = polygon[trianglesIndices[ti+2]];
+
+            if ( !rp1 && pointInTriangle(tp1, tp2, tp3, rect.tl()) ) { rp1 = true; }
+            if ( !rp2 && pointInTriangle(tp1, tp2, tp3, rect.tl()+cv::Point(rect.width, 0)) ) { rp2 = true; }
+            if ( !rp3 && pointInTriangle(tp1, tp2, tp3, rect.br()) ) { rp3 = true; }
+            if ( !rp4 && pointInTriangle(tp1, tp2, tp3, rect.br()-cv::Point(rect.width, 0)) ) { rp4 = true; }
+
+            if ( rp1 && rp2 && rp3 && rp4 ) { break; }
+        }
+
+        bool isInside = (rp1 && rp2 && rp3 && rp4);
+        subRectsExaming.push_back(isInside);
+        if ( isInside ) { subRectsInsideCount++; }
     }
 
+    qDebug()<<"Sub rects inside count:"<<subRectsInsideCount;
 
+    //-- Нарисуем все, которые внутри
+    for (size_t ri=0; ri<subRects.size(); ++ri) {
+        if ( subRectsExaming[ri] ) {
+            const cv::Rect &rect = subRects.at(ri);
+            cv::rectangle(surface, rect, cv::Scalar(255,255,0), 1, cv::LINE_AA);
+        }
+    }
 
 
 
@@ -303,7 +366,7 @@ int main(int argc, char *argv[])
 
         cv::imshow(_wndTitle, surface);
 
-        int keyPressed = cv::waitKey(0);
+        int keyPressed = cv::waitKey(1);
 
         if ( keyPressed==27 ) {
             _polygon.clear();
@@ -324,10 +387,6 @@ int main(int argc, char *argv[])
             std::cout<<"};"<<std::endl;
 
         }
-
-
-        qDebug()<<"FFF"<<keyPressed;
-
 
     }
 

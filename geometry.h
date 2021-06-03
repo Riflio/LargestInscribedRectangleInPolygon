@@ -6,6 +6,7 @@
 
 #include "opencv2/opencv.hpp"
 
+#include <QDebug>
 
 namespace Geometry {
 class Point: public cv::Point {
@@ -16,6 +17,9 @@ public:
     bool operator<(const Point &p) const { return ((x<p.x-EPS) || (std::abs(x-p.x)<EPS && y<p.y-EPS)); }
     Point &operator =(const cv::Point2d &p) { x = p.x; y = p.y; return *this;}
     Point &operator =(const cv::Point &p) { x = p.x; y = p.y; return *this;}
+    int &operator[](int idx) { return (idx==0)? x : y; }
+    const int &operator[](int idx) const { return (idx==0)? x : y; }
+    size_t size() const { return 2; }
 };
 };
 
