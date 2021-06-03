@@ -8,6 +8,7 @@
 #include <QDebug>
 
 
+#include <stack>
 
 #include "earcut.hpp/include/mapbox/earcut.hpp"
 
@@ -137,6 +138,167 @@ bool pointInTriangle(const Geometry::Point &a, const Geometry::Point &b, const G
 }
 
 
+/*
+uint64_t maxHist(int64_t row[], int64_t count, int64_t &left, int64_t &right)
+{
+    left = 0; right = 0;
+    std::stack<int64_t> stack;
+    uint64_t area = 0, areaMax = 0;
+    int64_t posLeft = 0, posRight = 0;
+    uint64_t topVal;
+
+    while ( posRight<count ) {
+        if ( stack.empty() || (row[stack.top()]<=row[posRight]) ) {
+            stack.push(posRight++);
+        } else {
+            posLeft = stack.top();
+            topVal = row[posLeft];
+            stack.pop();
+            area = topVal*posRight;
+
+            if ( !stack.empty() ) {
+                posLeft = stack.top()+1;
+                area = topVal*(posRight-posLeft);
+            }
+
+            if ( area>areaMax ) {
+                areaMax = area;
+                left = posLeft;
+                right = posRight-1;
+            }
+
+        }
+    }
+
+    while ( !stack.empty() ) {
+        posLeft = stack.top();
+        topVal = row[posLeft];
+        stack.pop();
+        area = topVal*posRight;
+        if ( !stack.empty() ) {
+            posLeft = stack.top()+1;
+            area = topVal*(posRight-posLeft);
+        }
+        if ( area>areaMax ) {
+            areaMax = area;
+            left = posLeft;
+            right = count-1;
+        }
+    }
+
+    return areaMax;
+}*/
+
+
+
+/**
+* @brief maxRectangle
+* @param M - linear matrix R*C
+* @param rows
+* @param cols
+* @ref https://www.geeksforgeeks.org/maximum-size-rectangle-binary-sub-matrix-1s/
+* @return
+*/
+/*cv::Rect maxRectangle(int64_t *M, int64_t rows, int64_t cols)
+{
+    int64_t left = 0, right = 0 , top = 0, bottom = 0, tLeft = 0, tRight = 0;
+    uint64_t area = 0, maxArea = maxHist(M+0, cols, left, right);
+
+    for (int64_t i=1; i<rows; ++i) {
+        for (int64_t j=0; j<cols; ++j) {
+            if ( *(M+i*cols+j) ) { *(M+i*cols+j) += *(M+(i-1)*cols+j); }
+        }
+
+        area = maxHist(M+i*cols, cols, tLeft, tRight);
+
+        if ( area>maxArea ) {
+            maxArea = area;
+            left = tLeft;
+            right = tRight;
+            bottom = i;
+            top = bottom-(area/(right-left+1))+1;
+        }
+    }
+
+    return cv::Rect(left, top, right-left, bottom-top);
+}*/
+
+
+
+/**
+* @brief Implementation of Kadane's algorithm for 1D array.
+* @param arr
+* @param start
+* @param finish
+* @param n
+* @return
+*/
+int64_t kadane(int64_t col[], int64_t* start, int64_t* finish, int64_t n)
+{
+    int64_t sum = 0, maxSum = INT_MIN, i;
+    *finish = -1;
+    int64_t local_start = 0;
+
+    for (i=0; i<n; ++i) {
+        sum += col[i];
+        if ( sum<0 ) {
+            sum = 0;
+            local_start = i + 1;
+        } else
+        if ( sum>maxSum ) {
+            maxSum = sum;
+            *start = local_start;
+            *finish = i;
+        }
+    }
+
+    if ( *finish!=-1 ) { return maxSum; }
+
+    maxSum = col[0];
+    *start = *finish = 0;
+
+    for (i=1; i<n; i++) {
+        if ( col[i]>maxSum ) {
+            maxSum = col[i];
+            *start = *finish = i;
+        }
+    }
+    return maxSum;
+}
+
+/**
+* @brief findMaxSum
+* @param M
+* @param rows
+* @param cols
+* @ref https://www.geeksforgeeks.org/maximum-sum-rectangle-in-a-2d-matrix-dp-27/
+*/
+cv::Rect findMaxSum(int64_t M[], int64_t rows, int64_t cols)
+{
+    int64_t maxSum = INT_MIN, finalLeft, finalRight, finalTop, finalBottom;
+    int64_t left, right, i;
+    int64_t temp[rows], sum, start, finish;
+
+    for (left=0; left<cols; ++left) {
+        memset(temp, 0, sizeof(temp));
+        for (right=left; right<cols; ++right) {
+            for (i=0; i<rows; ++i) { temp[i] += *(M+i*cols+right); }
+            sum = kadane(temp, &start, &finish, rows);
+            if ( sum>maxSum ) {
+                maxSum = sum;
+                finalLeft = left;
+                finalRight = right;
+                finalTop = start;
+                finalBottom = finish;
+            }
+        }
+    }
+
+    return cv::Rect(finalLeft, finalTop, finalRight-finalLeft, finalBottom-finalTop);
+}
+
+
+
 cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, cv::Mat surface, size_t maxIters)
 {
     if ( polygon.size()<4 ) { return cv::Rect(0,0,0,0); }
@@ -206,7 +368,7 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
         XRaysCount = XRays.size();
         YRaysCount = YRays.size();
 
-        qDebug()<<"ITER"<<xi<<yi<<XRaysCount<<YRaysCount;
+       // qDebug()<<"ITER"<<xi<<yi<<XRaysCount<<YRaysCount;
 
         if ( xi<XRaysCount ) { xi++; }
         if ( yi<YRaysCount ) { yi++; }
@@ -217,8 +379,8 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
 
 
     //-- Покажем получившиеся лучи
-    for (size_t xi=0;  xi<XRays.size(); ++xi) { cv::line(surface, cv::Point(XRays[xi], FT), cv::Point(XRays[xi], FB), cv::Scalar(150, 150,150), 1, cv::LINE_AA); }
-    for (size_t yi=0;  yi<YRays.size(); ++yi) { cv::line(surface, cv::Point(FL, YRays[yi]), cv::Point(FR, YRays[yi]), cv::Scalar(150, 150,150), 1, cv::LINE_AA); }
+    for (size_t xi=0;  xi<XRays.size(); ++xi) { cv::line(surface, cv::Point(XRays[xi], FT), cv::Point(XRays[xi], FB), cv::Scalar(150, 150,150), 1); }
+    for (size_t yi=0;  yi<YRays.size(); ++yi) { cv::line(surface, cv::Point(FL, YRays[yi]), cv::Point(FR, YRays[yi]), cv::Scalar(150, 150,150), 1); }
 
 
 
@@ -226,9 +388,8 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
     std::sort(XRays.begin(), XRays.end());
     std::sort(YRays.begin(), YRays.end());
 
-    //if ( YRaysCount%2!=0 ) { YRays.push_back(YRays[YRaysCount-1]+1); YRaysCount++; }
-    //if ( XRaysCount%2!=0 ) { XRays.push_back(XRays[XRaysCount-1]+1); XRaysCount++; }
-
+    //if ( XRaysCount%2!=0 ) { XRays.push_back(XRays[XRaysCount-1]+2); XRaysCount++; }
+    //if ( YRaysCount%2!=0 ) { YRays.push_back(YRays[YRaysCount-1]+2); YRaysCount++; }
 
     std::vector<cv::Rect> subRects;
     for (yi=1; yi<YRaysCount; ++yi) {
@@ -242,15 +403,9 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
     }
 
 
-    qDebug()<<"SUB RECTS COUNT"<<subRects.size();
-
     //-- Делаем триангуляцию полигона, что бы могли побыстраляну избавиться от прямоугольников вне полигона
-
-
     std::vector<std::vector<Geometry::Point>> ecCpolygon = {polygon};
     std::vector<uint32_t> trianglesIndices = mapbox::earcut<uint32_t>(ecCpolygon);
-
-    qDebug()<<"Triangles:"<<trianglesIndices.size()/3;
 
     for (size_t i=0; i<trianglesIndices.size(); i+=3) {
 
@@ -258,14 +413,14 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
         const Geometry::Point &p2 = polygon[trianglesIndices[i+1]];
         const Geometry::Point &p3 = polygon[trianglesIndices[i+2]];
 
-        cv::line(surface, p1, p2, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
-        cv::line(surface, p2, p3, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
-        cv::line(surface, p3, p1, cv::Scalar(127,0, 127), 2, cv::LINE_AA);
+        cv::line(surface, p1, p2, cv::Scalar(127,0, 250), 1);
+        cv::line(surface, p2, p3, cv::Scalar(127,0, 250), 1);
+        cv::line(surface, p3, p1, cv::Scalar(127,0, 250), 1);
     }
 
 
 
-    std::vector<bool> subRectsExaming;
+    std::vector<int64_t> subRectsAreas;
     int subRectsInsideCount = 0;
 
     for (size_t ri=0; ri<subRects.size(); ++ri) {
@@ -287,24 +442,32 @@ cv::Rect findMaxRectSubRectangles(const std::vector<Geometry::Point> &polygon, c
             if ( rp1 && rp2 && rp3 && rp4 ) { break; }
         }
 
+
         bool isInside = (rp1 && rp2 && rp3 && rp4);
-        subRectsExaming.push_back(isInside);
+        subRectsAreas.push_back((isInside)? rect.area() : INT_MIN);
         if ( isInside ) { subRectsInsideCount++; }
     }
 
-    qDebug()<<"Sub rects inside count:"<<subRectsInsideCount;
+    //qDebug()<<"Sub rects inside count:"<<subRectsInsideCount;
 
     //-- Нарисуем все, которые внутри
     for (size_t ri=0; ri<subRects.size(); ++ri) {
-        if ( subRectsExaming[ri] ) {
+        if ( subRectsAreas[ri]>0 ) {
             const cv::Rect &rect = subRects.at(ri);
-            cv::rectangle(surface, rect, cv::Scalar(255,255,0), 1, cv::LINE_AA);
+            cv::rectangle(surface, rect, cv::Scalar(255,255,0), 1);
         }
     }
 
 
+    int rows = YRaysCount-1, cols = XRaysCount-1;
 
-    return cv::Rect(0,0,0,0);
+    cv::Rect maxRectIDs = findMaxSum(&subRectsAreas[0], rows, cols);
+    int tl = maxRectIDs.y*cols+maxRectIDs.x;
+    int br = tl+ maxRectIDs.height*cols+maxRectIDs.width;
+
+    cv::Rect resRect = cv::Rect(subRects[tl].tl(), subRects[br].br());
+
+    return resRect;
 }
 
 
@@ -320,11 +483,11 @@ void onMouseClick(int event, int x, int y, int flags, void* userdata)
 
 int main(int argc, char *argv[])
 {
-     cv::namedWindow(_wndTitle, cv::WINDOW_FREERATIO);
+    cv::namedWindow(_wndTitle);
     cv::setMouseCallback(_wndTitle, onMouseClick, NULL);
 
-    int iteratCount = 40;
-    cv::createTrackbar("Iterat", _wndTitle, &iteratCount, 1020);
+    int iteratCount = 0;
+    cv::createTrackbar("Iterat", _wndTitle, &iteratCount, 20);
 
 
     cv::Scalar WHITE(255,255,255);
@@ -333,18 +496,17 @@ int main(int argc, char *argv[])
     cv::Scalar GREEN(0,255,0);
     cv::Scalar BLUE(255,0,0);
     cv::Scalar YELLOW(0,200,200);
-    cv::Scalar ORANGE(0,165,255);
+    cv::Scalar ORANGE(0,150,255);
 
 
     cv::Mat surface(768, 1024, CV_8UC3);
 
 
-    cv::Rect brutforceMethodRect;
     cv::Rect subrectanglesMethodRect;
 
     //_polygon={{155,591},{68,100},{949,31},{819,650}};
-    //_polygon = {{293,456},{166,308},{471,145},{471,145},{691,206},{817,567},{650,746},{285,728},{73,648},{109,474}};
-   // _polygon = {{538,384},{665,293},{452,154},{207,153},{141,387},{411,432},{318,712},{665,721},{939,473}};
+    _polygon = {{293,456},{166,308},{471,145},{471,145},{691,206},{817,567},{650,746},{285,728},{73,648},{109,474}};
+    //_polygon = {{538,384},{665,293},{452,154},{207,153},{141,387},{411,432},{318,712},{665,721},{939,473}};
 
     while ( cv::getWindowProperty(_wndTitle, cv::WND_PROP_VISIBLE ) ) {
 
@@ -354,27 +516,23 @@ int main(int argc, char *argv[])
         for (size_t i=1; i<_polygon.size()+1; ++i) {
             cv::Point prevPoint = _polygon[i-1];
             cv::Point curPoint = (i==_polygon.size())? _polygon[0] : _polygon[i];
-            cv::line(surface, prevPoint, curPoint, RED, 3, cv::LINE_AA);
-            cv::circle(surface, prevPoint, 10, ((i==1)? GREEN : BLUE), cv::FILLED);
+            cv::line(surface, prevPoint, curPoint, RED, 3);
+            cv::circle(surface, prevPoint, 8, ((i==1)? GREEN : BLACK), cv::FILLED);
         }
 
+        subrectanglesMethodRect = findMaxRectSubRectangles(_polygon, surface, iteratCount);
 
-        findMaxRectSubRectangles(_polygon, surface, iteratCount);
-
-        cv::rectangle(surface, brutforceMethodRect, YELLOW, 2);
-        cv::rectangle(surface, subrectanglesMethodRect, ORANGE, 2);
+        cv::rectangle(surface, subrectanglesMethodRect, ORANGE, 5);
 
         cv::imshow(_wndTitle, surface);
 
-        int keyPressed = cv::waitKey(1);
+        int keyPressed = cv::waitKey(10);
 
         if ( keyPressed==27 ) {
-            _polygon.clear();
-            brutforceMethodRect = cv::Rect(0,0,0,0);
+            _polygon.clear();            
             subrectanglesMethodRect = cv::Rect(0,0,0,0);
         } else
         if ( keyPressed==13 ) {
-            //brutforceMethodRect = findMaxRectBruteforce(_polygon);
             //subrectanglesMethodRect = findMaxRectSubRectangles(_polygon);
         } else
         if ( keyPressed==115 ) { //-- Save
