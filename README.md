@@ -4,7 +4,8 @@
 ![Example](MDImages/Example1.jpg)
 
 ## Algorithmic complexity 
-Maybe O(N^3)
+Minimum: O(N^3)
+Worse: O(N^6)
 
 ## Algorithm:
 
@@ -38,6 +39,9 @@ Maybe O(N^3)
 
 ## Problems
 - Depends on the position of the points, it may not find the largest area.
+
+## Limitations
+- Polygon must not self-intersected and have holes
 
 ## Depends
 - https://github.com/mapbox/earcut
