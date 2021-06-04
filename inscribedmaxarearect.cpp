@@ -1,4 +1,5 @@
 #include "inscribedmaxarearect.h"
+#include <cstring>
 #include <chrono>
 
 /**
