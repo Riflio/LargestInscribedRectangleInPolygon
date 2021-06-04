@@ -34,3 +34,12 @@ HEADERS += \
     earcut.hpp/include/mapbox/earcut.hpp \
     geometry.h \
     inscribedmaxarearect.h
+
+DISTFILES += \
+    MDImages/Example1.jpg \
+    MDImages/Result.jpg \
+    MDImages/Step1.jpg \
+    MDImages/Step2.jpg \
+    MDImages/Step3.jpg \
+    MDImages/Step4.jpg \
+    README.md
