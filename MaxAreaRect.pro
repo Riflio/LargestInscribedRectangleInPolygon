@@ -5,7 +5,7 @@ CONFIG += c++11 console
 CONFIG -= app_bundle
 
 SOURCES += \
-        geometry.cpp \
+        inscribedmaxarearect.cpp \
         main.cpp
 
 unix {
@@ -49,4 +49,5 @@ win32 {
 
 HEADERS += \
     earcut.hpp/include/mapbox/earcut.hpp \
-    geometry.h
+    geometry.h \
+    inscribedmaxarearect.h
