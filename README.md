@@ -4,8 +4,9 @@
 ![Example](MDImages/Example1.jpg)
 
 ## Algorithmic complexity 
-Minimum: O(N^3)
-Worse: O(N^6)
+
+- Minimum: O(N^3)
+- Worse: O(N^6)
 
 ## Algorithm:
 
