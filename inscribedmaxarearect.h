@@ -23,7 +23,7 @@ public:
     const Geometry::Rect& boundingBox() const;
     const std::vector<Geometry::Rect>& subRects() const;
     const std::vector<uint32_t>& trianglesIndices() const;
-    const std::vector<int64_t>& subRectsAreasInscribed() const;
+    const std::vector<double>& subRectsAreasInscribed() const;
     size_t subRectsInscribedCount() const;
     const Geometry::Rect& inscribedMaxAreaRect() const;
     double polygonArea() const;
@@ -47,11 +47,11 @@ private:
     std::vector<Geometry::Rect> _subRects; //-- Sub rectangles inscribed boundiong box
     std::vector<uint32_t> _trianglesIndices; //-- Triangle point indeces by _polygon points
     double _polygonArea;
-    std::vector<int64_t> _subRectsAreas; //-- Areas of inscribed sub rectangles. Positive values - rectangle inside polygon.
+    std::vector<double> _subRectsAreas; //-- Areas of inscribed sub rectangles. Positive values - rectangle inside polygon.
     size_t _subeRectsInscribedCount; //-- Count of sub rects in polygon
     Geometry::Rect _inscribedMaxAreaRect; //-- Result max area inscribed rectangle
 
-    int64_t kadane(int64_t col[], int64_t* start, int64_t* finish, int64_t n);
+    double kadane(double col[], int64_t &start, int64_t &finish, int64_t n);
 };
 
 

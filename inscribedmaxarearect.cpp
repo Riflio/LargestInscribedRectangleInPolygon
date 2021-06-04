@@ -153,6 +153,8 @@ bool InscribedMaxAreaRect::makePolygonTriangulation()
 */
 bool InscribedMaxAreaRect::makeAreasSubRectsInscribed()
 {
+    double minArea = -(_bb.width()*_bb.height());
+
     for (size_t ri=0; ri<_subRects.size(); ++ri) {
         const Geometry::Rect &rect = _subRects.at(ri);
         bool rp1 = false, rp2 = false, rp3 = false, rp4 = false;
@@ -170,7 +172,9 @@ bool InscribedMaxAreaRect::makeAreasSubRectsInscribed()
 
         bool isInside = (rp1 && rp2 && rp3 && rp4);
 
-        _subRectsAreas.push_back((isInside)? rect.area() : INT_MIN); //TODO: Make proportional area by bounding box
+        double area = ((rect.width()*100.0f)/_bb.width())*((rect.height()*100.0f)/_bb.height());
+
+        _subRectsAreas.push_back((isInside)? area : minArea);
         _subeRectsInscribedCount+= (isInside)? 1: 0;
     }
 
@@ -185,11 +189,11 @@ bool InscribedMaxAreaRect::makeAreasSubRectsInscribed()
 * @param n
 * @return
 */
-int64_t InscribedMaxAreaRect::kadane(int64_t col[], int64_t* start, int64_t* finish, int64_t n)
+double InscribedMaxAreaRect::kadane(double col[], int64_t &start, int64_t &finish, int64_t n)
 {
-    int64_t sum = 0, maxSum = INT_MIN, i;
-    *finish = -1;
-    int64_t local_start = 0;
+    finish = -1;
+    double sum = 0, maxSum = INT_MIN;
+    size_t i = 0, local_start = 0;
 
     for (i=0; i<n; ++i) {
         sum += col[i];
@@ -199,22 +203,24 @@ int64_t InscribedMaxAreaRect::kadane(int64_t col[], int64_t* start, int64_t* fin
         } else
         if ( sum>maxSum ) {
             maxSum = sum;
-            *start = local_start;
-            *finish = i;
+            start = local_start;
+            finish = i;
         }
     }
 
-    if ( *finish!=-1 ) { return maxSum; }
+    if ( finish!=-1 ) { return maxSum; }
 
     maxSum = col[0];
-    *start = *finish = 0;
+    start = 0;
+    finish = 0;
 
     for (i=1; i<n; i++) {
         if ( col[i]>maxSum ) {
             maxSum = col[i];
-            *start = *finish = i;
+            start = finish = i;
         }
     }
+
     return maxSum;
 }
 
@@ -225,18 +231,17 @@ int64_t InscribedMaxAreaRect::kadane(int64_t col[], int64_t* start, int64_t* fin
 */
 bool InscribedMaxAreaRect::makeMaxAreaRectBySubRects()
 {
-
     size_t rows = _raysYEdges.size()-1, cols = _raysXEdges.size()-1;
-    int64_t maxSum = INT_MIN, rLeft, rRight, rTop, rBottom;
-    int64_t temp[rows], sum, start, finish;
+    int64_t start, finish, rLeft, rRight, rTop, rBottom;
+    double maxSum = std::numeric_limits<double>::min(),  temp[rows], sum;
 
-    int64_t * M = &_subRectsAreas[0];
+    double * M = &_subRectsAreas[0];
 
     for (size_t left=0; left<cols; ++left) {
         memset(temp, 0, sizeof(temp));
         for (size_t right=left; right<cols; ++right) {
             for (size_t i=0; i<rows; ++i) { temp[i] += *(M+i*cols+right); }
-            sum = kadane(temp, &start, &finish, rows);
+            sum = kadane(temp, start, finish, rows);
             if ( sum>maxSum ) {
                 maxSum = sum;
                 rLeft = left;
@@ -297,7 +302,7 @@ const std::vector<uint32_t> &InscribedMaxAreaRect::trianglesIndices() const
     return _trianglesIndices;
 }
 
-const std::vector<int64_t> &InscribedMaxAreaRect::subRectsAreasInscribed() const
+const std::vector<double> &InscribedMaxAreaRect::subRectsAreasInscribed() const
 {
     return _subRectsAreas;
 }

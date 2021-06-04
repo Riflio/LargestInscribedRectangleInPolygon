@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
                 if ( showInscribedSubRectangles ) {
                     std::vector<Geometry::Rect> subRects = IMAR.subRects();
-                    std::vector<int64_t> subRectsAreas = IMAR.subRectsAreasInscribed();
+                    std::vector<double> subRectsAreas = IMAR.subRectsAreasInscribed();
 
                     for (size_t ri=0; ri<subRects.size(); ++ri) {
                         if ( subRectsAreas[ri]>0 ) {
@@ -151,9 +151,11 @@ int main(int argc, char *argv[])
                     }
                 }
 
+
+                double polygonArea = IMAR.polygonArea(), inscribedRectArea = IMAR.inscribedMaxAreaRect().area();
                 char areasText[100];
-                std::snprintf(areasText, sizeof(areasText), "Polygon area: %.1f, rect area: %.1f", IMAR.polygonArea(), IMAR.inscribedMaxAreaRect().area());
-                cv::putText(surface, areasText, cv::Point(5, surface.rows-10), cv::FONT_HERSHEY_COMPLEX, 0.5, BLACK);
+                std::snprintf(areasText, sizeof(areasText), "Polygon area: %.1f, rect area: %.1f (%.1f%%)", polygonArea, inscribedRectArea, (inscribedRectArea*100.0f)/polygonArea);
+                cv::putText(surface, std::string(areasText), cv::Point(5, surface.rows-10), cv::FONT_HERSHEY_COMPLEX, 0.5, BLACK);
             }
 
             //-- Draw anchor points and edges of polygon
@@ -163,8 +165,6 @@ int main(int argc, char *argv[])
                 cv::line(surface, prevPoint, curPoint, RED, 3);
                 cv::circle(surface, prevPoint, 8, ((i==1)? GREEN : BLACK), cv::FILLED);
             }
-
-
 
             //-- Result the max area inscribed rectangle
             Geometry::Rect maxAreaInscribedRed = IMAR.inscribedMaxAreaRect();
