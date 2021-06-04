@@ -9,8 +9,10 @@
 
 
 std::string _wndTitle = "MaxAreaRect";
-std::vector<cv::Point> _polygon;
-bool _needRepaint;
+cv::Size _wndSize(1024, 768);
+std::vector<cv::Point> _polygon =  {{500,240},{410,180},{320,180},{230,270},{230,390},{500,720},{770,390},{770,270},{680,180},{590,180}};
+bool _needRepaint = true;
+int32_t _curPointIndex = -1;
 
 cv::Scalar WHITE(255,255,255);
 cv::Scalar BLACK(0,0,0);
@@ -25,11 +27,35 @@ cv::Scalar YELLOW(0,200,200);
 cv::Scalar ORANGE(0,150,255);
 
 
+int32_t findPolygonPoint(const cv::Point &cp, int tol=200)
+{
+    for (size_t pi=0; pi<_polygon.size(); ++pi) {
+        const cv::Point &pp = _polygon.at(pi);
+        if ( ((pp.x-cp.x)*(pp.x-cp.x) + (pp.y-cp.y)*(pp.y-cp.y))<tol ) {
+            return pi;
+        }
+    }
+    return -1;
+}
+
 void onMouseClick(int event, int x, int y, int, void*)
 {
+    cv::Point cp(x,y);
+
     if  ( event==cv::EVENT_LBUTTONDOWN ) {
-        _polygon.push_back(cv::Point(x, y));
+        _curPointIndex = findPolygonPoint(cp);
         _needRepaint = true;
+    } else
+    if ( event==cv::EVENT_LBUTTONUP ) {
+        if ( _curPointIndex<0 ) { _polygon.push_back(cp); }
+        _curPointIndex = -1;
+        _needRepaint = true;
+    } else
+    if ( event==cv::EVENT_MOUSEMOVE ) {
+        if ( _curPointIndex>=0 ) {
+            _polygon[_curPointIndex] = cp;
+            _needRepaint = true;
+        }
     }
 }
 
@@ -43,26 +69,24 @@ int main(int argc, char *argv[])
 {
     Q_UNUSED(argc); Q_UNUSED(argv);
 
-    bool showAnchorPointRays = true, showEdgeIntersectRays = true, showPolygonTriangulation = true, showInscribedSubRectangles = true, showHint = true;
+    InscribedMaxAreaRect IMAR;
 
-    cv::Size wndSize(1024, 768);
+    bool showAnchorPointRays = true, showEdgeIntersectRays = true, showPolygonTriangulation = true, showInscribedSubRectangles = true, showResult = true, showHint = true;
 
     cv::namedWindow(_wndTitle, cv::WINDOW_KEEPRATIO);
-    cv::resizeWindow(_wndTitle, wndSize);
+    cv::resizeWindow(_wndTitle, _wndSize);
     cv::setMouseCallback(_wndTitle, onMouseClick, NULL);
 
     cv::createButton("Show anchor point rays", onCBBtnClick, &showAnchorPointRays, cv::QT_CHECKBOX, showAnchorPointRays);
     cv::createButton("Show edge intersect rays", onCBBtnClick, &showEdgeIntersectRays, cv::QT_CHECKBOX, showEdgeIntersectRays);
     cv::createButton("Show polygon triangulation", onCBBtnClick, &showPolygonTriangulation, cv::QT_CHECKBOX, showPolygonTriangulation);
     cv::createButton("Show inscribed sub rectangles", onCBBtnClick, &showInscribedSubRectangles, cv::QT_CHECKBOX, showInscribedSubRectangles);
+    cv::createButton("Show result", onCBBtnClick, &showResult, cv::QT_CHECKBOX, showResult);
     cv::createButton("Show hint", onCBBtnClick, &showHint, cv::QT_CHECKBOX, showHint);
 
-    cv::Mat surface(wndSize.height, wndSize.width, CV_8UC3);
-    _needRepaint = true;
+    cv::Mat surface(_wndSize.height, _wndSize.width, CV_8UC3);
 
-    _polygon = {{191,210},{75,556},{432,634},{895,551}};
-
-    InscribedMaxAreaRect IMAR;
+    std::vector<cv::Point> savedPolygon = _polygon;
 
     while ( cv::getWindowProperty(_wndTitle, cv::WND_PROP_VISIBLE ) ) {
 
@@ -77,17 +101,19 @@ int main(int argc, char *argv[])
             _needRepaint = true;
         } else
         if ( keyPressed==115 ) { //-- Save
-
+            savedPolygon = _polygon;
             std::cout<<"_polygon = {";
-            for (size_t i=0; i<_polygon.size(); ++i) {
-                std::cout<<"{"<<_polygon[i].x<<","<<_polygon[i].y<<"}";
-                if ( i<_polygon.size()-1 ) { std::cout<<","; }
+            for (size_t i=0; i<savedPolygon.size(); ++i) {
+                std::cout<<"{"<<savedPolygon[i].x<<","<<savedPolygon[i].y<<"}";
+                if ( i<savedPolygon.size()-1 ) { std::cout<<","; }
             }
             std::cout<<"};"<<std::endl;
-
+            _needRepaint = true;
+        } else
+        if ( keyPressed==114 ) { //-- Restore
+            _polygon = savedPolygon;
             _needRepaint = true;
         }
-
 
 
         if ( _needRepaint ) {
@@ -97,8 +123,10 @@ int main(int argc, char *argv[])
             if ( showHint ) {
                 cv::putText(surface, "Press CTRL+P for display options.", cv::Point(5,20), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
                 cv::putText(surface, "Press ESC for clear.", cv::Point(5,40), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
-                cv::putText(surface, "Press Mouse LB for draw new point.", cv::Point(5,60), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
-                cv::putText(surface, "Press S for save current polygon (console output).", cv::Point(5,80), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
+                cv::putText(surface, "Press S for save and output current polygon to console.", cv::Point(5,60), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
+                cv::putText(surface, "Press R for restore saved polygon.", cv::Point(5,80), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
+                cv::putText(surface, "Click Mouse LB for draw new point.", cv::Point(5,100), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
+                cv::putText(surface, "Press Mouse LB ang drag to move point.", cv::Point(5,120), cv::FONT_HERSHEY_COMPLEX, 0.5, LGRAY);
             }
 
             //=============================================
@@ -174,9 +202,11 @@ int main(int argc, char *argv[])
                 cv::circle(surface, prevPoint, 8, ((i==1)? GREEN : BLACK), cv::FILLED);
             }
 
-            //-- Result the max area inscribed rectangle
-            Geometry::Rect maxAreaInscribedRed = IMAR.inscribedMaxAreaRect();
-            cv::rectangle(surface, cv::Rect(maxAreaInscribedRed.l, maxAreaInscribedRed.t, maxAreaInscribedRed.width(), maxAreaInscribedRed.height()), ORANGE, 5);
+
+            if ( showResult ) {
+                Geometry::Rect maxAreaInscribedRed = IMAR.inscribedMaxAreaRect();
+                cv::rectangle(surface, cv::Rect(maxAreaInscribedRed.l, maxAreaInscribedRed.t, maxAreaInscribedRed.width(), maxAreaInscribedRed.height()), ORANGE, 5);
+            }
 
             cv::imshow(_wndTitle, surface);
 
