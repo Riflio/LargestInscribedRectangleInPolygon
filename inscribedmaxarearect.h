@@ -26,6 +26,7 @@ public:
     const std::vector<double>& subRectsAreasInscribed() const;
     size_t subRectsInscribedCount() const;
     const Geometry::Rect& inscribedMaxAreaRect() const;
+    uint64_t findElapsedMcS() const;
     double polygonArea() const;
 
     bool findMaxAreaInscribedRect();
@@ -50,6 +51,7 @@ private:
     std::vector<double> _subRectsAreas; //-- Areas of inscribed sub rectangles. Positive values - rectangle inside polygon.
     size_t _subeRectsInscribedCount; //-- Count of sub rects in polygon
     Geometry::Rect _inscribedMaxAreaRect; //-- Result max area inscribed rectangle
+    uint64_t _findElapsedMcS;
 
     double kadane(double col[], int64_t &start, int64_t &finish, int64_t n);
 };

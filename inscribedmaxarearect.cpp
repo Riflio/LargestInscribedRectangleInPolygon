@@ -1,4 +1,5 @@
 #include "inscribedmaxarearect.h"
+#include <chrono>
 
 /**
 * @brief Find max area inscribed rectangle in polygon
@@ -6,6 +7,8 @@
 */
 bool InscribedMaxAreaRect::findMaxAreaInscribedRect()
 {
+    auto tStart = std::chrono::steady_clock::now();
+
     if ( _polygon.size()<4 ) { return false; }
     if ( !makeAnchrorRays() ) { return false; }
     if ( !makeEdgeIntersectRays() ) { return false; }
@@ -13,6 +16,10 @@ bool InscribedMaxAreaRect::findMaxAreaInscribedRect()
     if ( !makePolygonTriangulation() ) { return false; }
     if ( !makeAreasSubRectsInscribed() ) { return false; }
     if ( !makeMaxAreaRectBySubRects() ) { return false; }
+
+    auto tEnd = std::chrono::steady_clock::now();
+
+    _findElapsedMcS = std::chrono::duration_cast<std::chrono::microseconds>(tEnd-tStart).count();
 
     return true;
 }
@@ -352,8 +359,12 @@ double InscribedMaxAreaRect::polygonArea() const
    return _polygonArea;
 }
 
+uint64_t InscribedMaxAreaRect::findElapsedMcS() const
+{
+    return _findElapsedMcS;
+}
+
 const Geometry::Rect &InscribedMaxAreaRect::inscribedMaxAreaRect() const
 {
     return _inscribedMaxAreaRect;
 }
-
