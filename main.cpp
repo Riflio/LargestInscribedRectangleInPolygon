@@ -204,8 +204,8 @@ int main(int argc, char *argv[])
 
 
             if ( showResult ) {
-                Geometry::Rect maxAreaInscribedRed = IMAR.inscribedMaxAreaRect();
-                cv::rectangle(surface, cv::Rect(maxAreaInscribedRed.l, maxAreaInscribedRed.t, maxAreaInscribedRed.width(), maxAreaInscribedRed.height()), ORANGE, 5);
+                Geometry::Rect maxAreaInscribedRect = IMAR.inscribedMaxAreaRect();
+                cv::rectangle(surface, cv::Rect(maxAreaInscribedRect.l, maxAreaInscribedRect.t, maxAreaInscribedRect.width(), maxAreaInscribedRect.height()), ORANGE, 5);
             }
 
             cv::imshow(_wndTitle, surface);

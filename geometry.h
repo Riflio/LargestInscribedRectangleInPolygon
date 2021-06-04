@@ -4,10 +4,6 @@
 #include <iostream>
 #include <cmath>
 
-#include "opencv2/opencv.hpp"
-
-#include <QDebug>
-
 namespace Geometry {
 
 class Point {
@@ -77,10 +73,18 @@ public:
 
     #define det(a,b,c,d)  (a*d-b*c)
 
-
     static inline bool betw(double l, double r, double x) { return ( (std::min(l,r)<=x+EPS) && (x<=std::max(l,r)+EPS) ); }
     static inline bool intersect_1d(double a, double b, double c, double d) { if ( a>b ) { std::swap(a, b); } if ( c>d ) { std::swap(c, d); } return ( std::max(a, c)<=std::min(b, d)+EPS ); }
 
+    /**
+    * @brief Intersect point of 2 lines
+    * @param a - line 1 start
+    * @param b - line 1 end
+    * @param c - line 2 start
+    * @param d - line 2 end
+    * @param dot - result point
+    * @return true if intersect
+    */
     static bool intersect(Point a, Point b, Point c, Point d, Point &dot)
     {
         if ( !intersect_1d(a.x, b.x, c.x, d.x) || !intersect_1d(a.y, b.y, c.y, d.y) ) { return false; }
@@ -98,10 +102,10 @@ public:
     }
 
     /**
-    * @brief belong
-    * @param a
-    * @param b
-    * @param p
+    * @brief Check is point belong line
+    * @param a - line start
+    * @param b - line end
+    * @param p - check point
     * @return
     */
     static bool belong(Point p1, Point p2, Point t)
@@ -126,9 +130,11 @@ public:
     */
     static bool pointInTriangle(const Geometry::Point &a, const Geometry::Point &b, const Geometry::Point &c, const Geometry::Point &p)
     {
-        return (c.x - p.x) * (a.y - p.y) - (a.x - p.x) * (c.y - p.y) >= 0 &&
-               (a.x - p.x) * (b.y - p.y) - (b.x - p.x) * (a.y - p.y) >= 0 &&
-               (b.x - p.x) * (c.y - p.y) - (c.x - p.x) * (b.y - p.y) >= 0;
+        return (
+            ((c.x-p.x)*(a.y-p.y) - (a.x-p.x)*(c.y-p.y)>= 0) &&
+            ((a.x-p.x)*(b.y-p.y) - (b.x-p.x)*(a.y-p.y)>= 0) &&
+            ((b.x-p.x)*(c.y-p.y) - (c.x-p.x)*(b.y-p.y)>= 0)
+        );
     }
 
 };
