@@ -151,10 +151,18 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                size_t polygonPointsCount = polygonForFind.size();
                 double polygonArea = IMAR.polygonArea(), inscribedRectArea = IMAR.inscribedMaxAreaRect().area();
                 uint64_t findElapsedMcS = IMAR.findElapsedMcS();
-                char areasText[100];
-                std::snprintf(areasText, sizeof(areasText), "Polygon area: %.1f, rect area: %.1f (%.1f%%). Elapsed: %lu mcs.", polygonArea, inscribedRectArea, (inscribedRectArea*100.0f)/polygonArea, findElapsedMcS);
+                char areasText[150];
+                std::snprintf(areasText, sizeof(areasText),
+                    "Polygon points count: %d, area: %.1f, rect area: %.1f (%.1f%%). Elapsed: %llu mcs.",
+                    polygonPointsCount,
+                    polygonArea,
+                    inscribedRectArea,
+                    (inscribedRectArea*100.0f)/polygonArea,
+                    findElapsedMcS
+                );
                 cv::putText(surface, std::string(areasText), cv::Point(5, surface.rows-10), cv::FONT_HERSHEY_COMPLEX, 0.5, BLACK);
             }
 
