@@ -45,7 +45,7 @@
 - Polygon must not self-intersected and have holes
 
 ## Depends
-- https://github.com/mapbox/earcut
+- https://github.com/mapbox/earcut.hpp
 - For run example: Qt and OpenCV 
 
 
